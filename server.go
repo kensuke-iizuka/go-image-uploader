@@ -1,34 +1,54 @@
 package main
 
 import (
-    "html/template"
-    "io"
-    "net/http"
-    "github.com/labstack/echo"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
-type Template struct {
-    templates *template.Template
-}
+func upload(c echo.Context) error {
+	// Read form fields
+	name := c.FormValue("name")
+	email := c.FormValue("email")
+	//-----------
+	// Read file
+	//-----------
+	// Source
+	file, err := c.FormFile("file")
+	if err != nil {
+		return err
+	}
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+	// Destination
+	dst, err := os.Create(file.Filename)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+	// Copy
+	if _, err = io.Copy(dst, src); err != nil {
+		return err
+    }
+    successMsg := "<p>File %s uploaded successfully with fields name=%s and email=%s.</p>"
 
-func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-    return t.templates.ExecuteTemplate(w, name, data)
-}
-
-func Hello(c echo.Context) error {
-    return c.Render(http.StatusOK, "hello", "World")
+	return c.HTML(http.StatusOK, fmt.Sprintf(successMsg, file.Filename, name, email))
 }
 
 func main() {
-    t := &Template{
-        templates: template.Must(template.ParseGlob("public/views/*.html")),
-    }
+	e := echo.New()
 
-    e := echo.New()
-    e.Renderer = t
-    e.GET("/hello", Hello)
-    // e.GET("/", func(c echo.Context) error {
-    //     return c.String(http.StatusOK, "Hello World!")
-    // })
-    e.Logger.Fatal(e.Start(":8001"))
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	e.Static("/", "public")
+	e.POST("/upload", upload)
+
+	e.Logger.Fatal(e.Start(":1323"))
 }
