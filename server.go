@@ -12,7 +12,8 @@ import (
 func upload(c echo.Context) error {
 	// Read form fields
 	name := c.FormValue("name")
-	email := c.FormValue("email")
+    email := c.FormValue("email")
+    imgDir := "images/"
 	//-----------
 	// Read file
 	//-----------
@@ -27,7 +28,7 @@ func upload(c echo.Context) error {
 	}
 	defer src.Close()
 	// Destination
-	dst, err := os.Create(file.Filename)
+	dst, err := os.Create(imgDir + file.Filename)
 	if err != nil {
 		return err
 	}
@@ -50,5 +51,5 @@ func main() {
 	e.Static("/", "public")
 	e.POST("/upload", upload)
 
-	e.Logger.Fatal(e.Start(":1323"))
+	e.Logger.Fatal(e.Start(":5001"))
 }
